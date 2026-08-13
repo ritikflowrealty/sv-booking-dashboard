@@ -33,8 +33,14 @@ export default function EntryPage() {
 
   useEffect(() => {
     fetch("/api/my-projects").then((r) => r.json()).then(setProjects);
-    fetch("/api/sales-managers").then((r) => r.json()).then(setSalesManagers);
   }, []);
+
+  // Fetch sales managers filtered by selected project
+  useEffect(() => {
+    const params = selectedProject ? `?projectId=${selectedProject}` : "";
+    fetch(`/api/sales-managers${params}`).then((r) => r.json()).then(setSalesManagers);
+    setSelectedSM("");
+  }, [selectedProject]);
 
   useEffect(() => {
     if (cancellations > 0 && cancelDetails.length === 0) {

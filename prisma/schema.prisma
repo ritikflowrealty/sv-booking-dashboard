@@ -39,29 +39,42 @@ model Developer {
 }
 
 model Project {
-  id           String        @id @default(cuid())
-  name         String
-  developerId  String
-  developer    Developer     @relation(fields: [developerId], references: [id])
-  location     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  userProjects UserProject[]
-  entries      Entry[]
+  id                   String                @id @default(cuid())
+  name                 String
+  developerId          String
+  developer            Developer             @relation(fields: [developerId], references: [id])
+  location             String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  userProjects         UserProject[]
+  salesManagerProjects SalesManagerProject[]
+  entries              Entry[]
 
   @@unique([name, developerId])
 }
 
 model SalesManager {
-  id        String   @id @default(cuid())
-  name      String
-  teamLeadId String
-  teamLead  User     @relation(fields: [teamLeadId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  entries   Entry[]
+  id                   String                @id @default(cuid())
+  name                 String
+  teamLeadId           String
+  teamLead             User                  @relation(fields: [teamLeadId], references: [id], onDelete: Cascade)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  salesManagerProjects SalesManagerProject[]
+  entries              Entry[]
 
   @@unique([name, teamLeadId])
+}
+
+model SalesManagerProject {
+  id             String       @id @default(cuid())
+  salesManagerId String
+  salesManager   SalesManager @relation(fields: [salesManagerId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([salesManagerId, projectId])
 }
 
 model Entry {

@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Flow Realty - SV and Booking Dashboard",
   description: "Site Visit and Booking Management Dashboard for Flow Realty",
+  icons: {
+    icon: "/favicon.jpg",
+  },
 };
 
 export default function RootLayout({
