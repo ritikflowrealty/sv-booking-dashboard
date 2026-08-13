@@ -11,12 +11,18 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
   const userId = searchParams.get("userId");
+  const projectId = searchParams.get("projectId");
+  const developerId = searchParams.get("developerId");
 
   const where: Record<string, unknown> = { year };
   if (userId && session.user.role === "admin") {
     where.userId = userId;
-  } else if (session.user.role === "sales_manager") {
+  } else if (session.user.role === "team_lead") {
     where.userId = session.user.id;
+  }
+  if (projectId) where.projectId = projectId;
+  if (developerId) {
+    where.project = { developerId };
   }
 
   // Get all entries for the year
@@ -24,6 +30,7 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       user: { select: { id: true, name: true } },
+      project: { select: { id: true, name: true, developer: { select: { id: true, name: true } } } },
       cancelDetails: true,
     },
     orderBy: [{ month: "asc" }, { half: "asc" }],
@@ -36,17 +43,19 @@ export async function GET(req: NextRequest) {
     },
     include: {
       entry: {
-        select: { year: true, month: true, half: true },
+        select: { year: true, month: true, half: true, projectId: true },
       },
     },
   });
 
-  // Calculate net bookings per period (bookings minus cancellations from later periods)
+  // Calculate net bookings per period
   const periodData = entries.map((entry) => {
     const cancellationsFromThisPeriod = cancelDetailsAffecting
       .filter(
         (cd) =>
-          cd.bookedMonth === entry.month && cd.bookedHalf === entry.half
+          cd.bookedMonth === entry.month &&
+          cd.bookedHalf === entry.half &&
+          (projectId ? cd.entry.projectId === projectId : true)
       )
       .reduce((sum, cd) => sum + cd.count, 0);
 

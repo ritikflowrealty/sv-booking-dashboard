@@ -11,16 +11,43 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      String   @default("sales_manager") // admin, sales_manager
+  role      String   @default("team_lead") // admin, team_lead
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   entries   Entry[]
+}
+
+model Developer {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  location  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id])
+  location    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  users       User[]
+  entries     Entry[]
+
+  @@unique([name, developerId])
 }
 
 model Entry {
   id            String        @id @default(cuid())
   userId        String
   user          User          @relation(fields: [userId], references: [id])
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id])
   periodStart   DateTime
   periodEnd     DateTime
   year          Int
@@ -33,7 +60,7 @@ model Entry {
   updatedAt     DateTime      @updatedAt
   cancelDetails CancelDetail[]
 
-  @@unique([userId, year, month, half])
+  @@unique([userId, projectId, year, month, half])
 }
 
 model CancelDetail {

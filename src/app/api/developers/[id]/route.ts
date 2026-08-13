@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -13,29 +12,14 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const { name, email, password, role, projectId } = await req.json();
+  const { name, location } = await req.json();
 
-  const updateData: Record<string, unknown> = {};
-  if (name) updateData.name = name;
-  if (email) updateData.email = email;
-  if (role) updateData.role = role;
-  if (projectId !== undefined) updateData.projectId = projectId || null;
-  if (password) updateData.password = await hash(password, 12);
-
-  const user = await prisma.user.update({
+  const developer = await prisma.developer.update({
     where: { id },
-    data: updateData,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      projectId: true,
-      createdAt: true,
-    },
+    data: { name, location },
   });
 
-  return NextResponse.json(user);
+  return NextResponse.json(developer);
 }
 
 export async function DELETE(
@@ -48,7 +32,7 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  await prisma.user.delete({ where: { id } });
+  await prisma.developer.delete({ where: { id } });
 
-  return NextResponse.json({ message: "User deleted" });
+  return NextResponse.json({ message: "Developer deleted" });
 }

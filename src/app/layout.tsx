@@ -6,8 +6,8 @@ import { SessionProvider } from "@/components/SessionProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SV and Booking Dashboard",
-  description: "Site Visit and Booking Management Dashboard",
+  title: "Flow Realty - SV and Booking Dashboard",
+  description: "Site Visit and Booking Management Dashboard for Flow Realty",
 };
 
 export default function RootLayout({

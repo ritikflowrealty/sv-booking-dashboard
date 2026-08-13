@@ -15,6 +15,14 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
+      projectId: true,
+      project: {
+        select: {
+          id: true,
+          name: true,
+          developer: { select: { name: true } },
+        },
+      },
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
@@ -29,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, email, password, role } = await req.json();
+  const { name, email, password, role, projectId } = await req.json();
 
   if (!name || !email || !password) {
     return NextResponse.json(
@@ -53,13 +61,15 @@ export async function POST(req: NextRequest) {
       name,
       email,
       password: hashedPassword,
-      role: role || "sales_manager",
+      role: role || "team_lead",
+      projectId: projectId || null,
     },
     select: {
       id: true,
       name: true,
       email: true,
       role: true,
+      projectId: true,
       createdAt: true,
     },
   });

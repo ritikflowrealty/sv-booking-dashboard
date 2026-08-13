@@ -13,15 +13,17 @@ export async function GET(req: NextRequest) {
   const month = searchParams.get("month");
   const half = searchParams.get("half");
   const userId = searchParams.get("userId");
+  const projectId = searchParams.get("projectId");
 
   const where: Record<string, unknown> = {};
   if (year) where.year = parseInt(year);
   if (month) where.month = parseInt(month);
   if (half) where.half = parseInt(half);
   if (userId) where.userId = userId;
+  if (projectId) where.projectId = projectId;
 
-  // Sales managers can only see their own entries
-  if (session.user.role === "sales_manager") {
+  // Team leads can only see their own entries
+  if (session.user.role === "team_lead") {
     where.userId = session.user.id;
   }
 
@@ -29,6 +31,7 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       user: { select: { id: true, name: true, email: true } },
+      project: { select: { id: true, name: true, developer: { select: { name: true } } } },
       cancelDetails: true,
     },
     orderBy: [{ year: "desc" }, { month: "desc" }, { half: "desc" }],
@@ -43,10 +46,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { year, month, half, siteVisits, bookings, cancellations, cancelDetails, userId } =
+  const { year, month, half, siteVisits, bookings, cancellations, cancelDetails, userId, projectId } =
     await req.json();
 
-  // Admin can create for any user, sales manager only for themselves
+  // Admin can create for any user, team lead only for themselves
   const targetUserId =
     session.user.role === "admin" && userId ? userId : session.user.id;
 
@@ -59,8 +62,9 @@ export async function POST(req: NextRequest) {
     // Create or update the entry
     const entry = await prisma.entry.upsert({
       where: {
-        userId_year_month_half: {
+        userId_projectId_year_month_half: {
           userId: targetUserId,
+          projectId: projectId || "",
           year,
           month,
           half,
@@ -73,6 +77,7 @@ export async function POST(req: NextRequest) {
       },
       create: {
         userId: targetUserId,
+        projectId: projectId || null,
         year,
         month,
         half,
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Handle cancel details - remove old ones and create new
+    // Handle cancel details
     if (cancellations > 0 && cancelDetails && cancelDetails.length > 0) {
       await prisma.cancelDetail.deleteMany({
         where: { entryId: entry.id },
