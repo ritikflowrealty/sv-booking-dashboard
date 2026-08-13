@@ -13,6 +13,9 @@ import {
   BarChart3,
   Building2,
   FolderKanban,
+  FileText,
+  UserCheck,
+  Upload,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -43,6 +46,24 @@ export function Sidebar({ user }: SidebarProps) {
       href: "/dashboard/analytics",
       label: "Analytics",
       icon: BarChart3,
+      roles: ["admin", "team_lead"],
+    },
+    {
+      href: "/dashboard/records",
+      label: "Records",
+      icon: FileText,
+      roles: ["admin", "team_lead"],
+    },
+    {
+      href: "/dashboard/sales-managers",
+      label: "Sales Managers",
+      icon: UserCheck,
+      roles: ["admin", "team_lead"],
+    },
+    {
+      href: "/dashboard/bulk-upload",
+      label: "Bulk Upload",
+      icon: Upload,
       roles: ["admin", "team_lead"],
     },
     {

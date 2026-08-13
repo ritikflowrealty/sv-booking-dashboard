@@ -13,27 +13,29 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const { name, email, password, role, projectId } = await req.json();
+  const { name, email, password, role, projectIds } = await req.json();
 
   const updateData: Record<string, unknown> = {};
   if (name) updateData.name = name;
   if (email) updateData.email = email;
   if (role) updateData.role = role;
-  if (projectId !== undefined) updateData.projectId = projectId || null;
   if (password) updateData.password = await hash(password, 12);
 
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      projectId: true,
-      createdAt: true,
-    },
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
+
+  // Update project assignments if provided
+  if (projectIds !== undefined) {
+    await prisma.userProject.deleteMany({ where: { userId: id } });
+    if (projectIds.length > 0) {
+      await prisma.userProject.createMany({
+        data: projectIds.map((pid: string) => ({ id: crypto.randomUUID(), userId: id, projectId: pid })),
+      });
+    }
+  }
 
   return NextResponse.json(user);
 }
@@ -49,6 +51,5 @@ export async function DELETE(
 
   const { id } = await params;
   await prisma.user.delete({ where: { id } });
-
   return NextResponse.json({ message: "User deleted" });
 }

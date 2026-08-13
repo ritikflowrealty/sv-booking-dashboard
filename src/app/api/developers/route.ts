@@ -12,7 +12,7 @@ export async function GET() {
     include: {
       projects: {
         include: {
-          _count: { select: { users: true, entries: true } },
+          _count: { select: { entries: true, userProjects: true } },
         },
       },
     },

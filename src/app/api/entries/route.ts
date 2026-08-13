@@ -10,27 +10,23 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const year = searchParams.get("year");
-  const month = searchParams.get("month");
-  const half = searchParams.get("half");
-  const userId = searchParams.get("userId");
   const projectId = searchParams.get("projectId");
+  const salesManagerId = searchParams.get("salesManagerId");
 
   const where: Record<string, unknown> = {};
   if (year) where.year = parseInt(year);
-  if (month) where.month = parseInt(month);
-  if (half) where.half = parseInt(half);
-  if (userId) where.userId = userId;
   if (projectId) where.projectId = projectId;
+  if (salesManagerId) where.salesManagerId = salesManagerId;
 
-  // Team leads can only see their own entries
+  // Team leads can only see entries from their sales managers
   if (session.user.role === "team_lead") {
-    where.userId = session.user.id;
+    where.salesManager = { teamLeadId: session.user.id };
   }
 
   const entries = await prisma.entry.findMany({
     where,
     include: {
-      user: { select: { id: true, name: true, email: true } },
+      salesManager: { select: { id: true, name: true, teamLeadId: true } },
       project: { select: { id: true, name: true, developer: { select: { name: true } } } },
       cancelDetails: true,
     },
@@ -46,38 +42,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { year, month, half, siteVisits, bookings, cancellations, cancelDetails, userId, projectId } =
+  const { year, month, half, siteVisits, bookings, cancellations, cancelDetails, salesManagerId, projectId } =
     await req.json();
 
-  // Admin can create for any user, team lead only for themselves
-  const targetUserId =
-    session.user.role === "admin" && userId ? userId : session.user.id;
+  if (!salesManagerId || !projectId) {
+    return NextResponse.json({ error: "Sales Manager and Project are required" }, { status: 400 });
+  }
 
-  // Calculate period dates
+  // Verify ownership for team lead
+  if (session.user.role === "team_lead") {
+    const sm = await prisma.salesManager.findUnique({ where: { id: salesManagerId } });
+    if (!sm || sm.teamLeadId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   const periodStart = new Date(year, month - 1, half === 1 ? 1 : 16);
   const lastDay = new Date(year, month, 0).getDate();
   const periodEnd = new Date(year, month - 1, half === 1 ? 15 : lastDay);
 
   try {
-    // Create or update the entry
     const entry = await prisma.entry.upsert({
       where: {
-        userId_projectId_year_month_half: {
-          userId: targetUserId,
-          projectId: projectId || "",
+        salesManagerId_projectId_year_month_half: {
+          salesManagerId,
+          projectId,
           year,
           month,
           half,
         },
       },
-      update: {
-        siteVisits,
-        bookings,
-        cancellations,
-      },
+      update: { siteVisits, bookings, cancellations },
       create: {
-        userId: targetUserId,
-        projectId: projectId || null,
+        salesManagerId,
+        projectId,
         year,
         month,
         half,
@@ -91,29 +89,21 @@ export async function POST(req: NextRequest) {
 
     // Handle cancel details
     if (cancellations > 0 && cancelDetails && cancelDetails.length > 0) {
-      await prisma.cancelDetail.deleteMany({
-        where: { entryId: entry.id },
-      });
-
+      await prisma.cancelDetail.deleteMany({ where: { entryId: entry.id } });
       await prisma.cancelDetail.createMany({
         data: cancelDetails.map(
-          (detail: { count: number; bookedYear: number; bookedMonth: number; bookedHalf: number }) => ({
-            entryId: entry.id,
-            count: detail.count,
-            bookedYear: detail.bookedYear,
-            bookedMonth: detail.bookedMonth,
-            bookedHalf: detail.bookedHalf,
+          (d: { count: number; bookedYear: number; bookedMonth: number; bookedHalf: number }) => ({
+            entryId: entry.id, count: d.count, bookedYear: d.bookedYear, bookedMonth: d.bookedMonth, bookedHalf: d.bookedHalf,
           })
         ),
       });
+    } else if (cancellations === 0) {
+      await prisma.cancelDetail.deleteMany({ where: { entryId: entry.id } });
     }
 
     return NextResponse.json(entry);
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: "Failed to create entry" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create entry" }, { status: 500 });
   }
 }

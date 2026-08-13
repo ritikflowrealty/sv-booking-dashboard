@@ -7,16 +7,26 @@ datasource db {
 }
 
 model User {
+  id            String          @id @default(cuid())
+  name          String
+  email         String          @unique
+  password      String
+  role          String          @default("team_lead") // admin, team_lead
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  userProjects  UserProject[]
+  salesManagers SalesManager[]
+}
+
+model UserProject {
   id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("team_lead") // admin, team_lead
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  entries   Entry[]
+
+  @@unique([userId, projectId])
 }
 
 model Developer {
@@ -29,38 +39,50 @@ model Developer {
 }
 
 model Project {
-  id          String    @id @default(cuid())
-  name        String
-  developerId String
-  developer   Developer @relation(fields: [developerId], references: [id])
-  location    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  users       User[]
-  entries     Entry[]
+  id           String        @id @default(cuid())
+  name         String
+  developerId  String
+  developer    Developer     @relation(fields: [developerId], references: [id])
+  location     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  userProjects UserProject[]
+  entries      Entry[]
 
   @@unique([name, developerId])
 }
 
-model Entry {
-  id            String        @id @default(cuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  projectId     String?
-  project       Project?      @relation(fields: [projectId], references: [id])
-  periodStart   DateTime
-  periodEnd     DateTime
-  year          Int
-  month         Int
-  half          Int           // 1 = 1st-15th, 2 = 16th-end
-  siteVisits    Int           @default(0)
-  bookings      Int           @default(0)
-  cancellations Int           @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  cancelDetails CancelDetail[]
+model SalesManager {
+  id        String   @id @default(cuid())
+  name      String
+  teamLeadId String
+  teamLead  User     @relation(fields: [teamLeadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entries   Entry[]
 
-  @@unique([userId, projectId, year, month, half])
+  @@unique([name, teamLeadId])
+}
+
+model Entry {
+  id             String        @id @default(cuid())
+  salesManagerId String
+  salesManager   SalesManager  @relation(fields: [salesManagerId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id])
+  periodStart    DateTime
+  periodEnd      DateTime
+  year           Int
+  month          Int
+  half           Int           // 1 = 1st-15th, 2 = 16th-end
+  siteVisits     Int           @default(0)
+  bookings       Int           @default(0)
+  cancellations  Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  cancelDetails  CancelDetail[]
+
+  @@unique([salesManagerId, projectId, year, month, half])
 }
 
 model CancelDetail {

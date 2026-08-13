@@ -10,52 +10,43 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString());
-  const userId = searchParams.get("userId");
   const projectId = searchParams.get("projectId");
-  const developerId = searchParams.get("developerId");
+  const salesManagerId = searchParams.get("salesManagerId");
 
   const where: Record<string, unknown> = { year };
-  if (userId && session.user.role === "admin") {
-    where.userId = userId;
-  } else if (session.user.role === "team_lead") {
-    where.userId = session.user.id;
-  }
   if (projectId) where.projectId = projectId;
-  if (developerId) {
-    where.project = { developerId };
+  if (salesManagerId) where.salesManagerId = salesManagerId;
+
+  // Team leads can only see their own sales managers' entries
+  if (session.user.role === "team_lead") {
+    where.salesManager = { teamLeadId: session.user.id };
   }
 
-  // Get all entries for the year
   const entries = await prisma.entry.findMany({
     where,
     include: {
-      user: { select: { id: true, name: true } },
+      salesManager: { select: { id: true, name: true } },
       project: { select: { id: true, name: true, developer: { select: { id: true, name: true } } } },
       cancelDetails: true,
     },
     orderBy: [{ month: "asc" }, { half: "asc" }],
   });
 
-  // Get all cancel details that affect this year's data
+  // Get cancel details that affect this year
   const cancelDetailsAffecting = await prisma.cancelDetail.findMany({
-    where: {
-      bookedYear: year,
-    },
+    where: { bookedYear: year },
     include: {
-      entry: {
-        select: { year: true, month: true, half: true, projectId: true },
-      },
+      entry: { select: { year: true, month: true, half: true, projectId: true } },
     },
   });
 
-  // Calculate net bookings per period
   const periodData = entries.map((entry) => {
     const cancellationsFromThisPeriod = cancelDetailsAffecting
       .filter(
         (cd) =>
           cd.bookedMonth === entry.month &&
           cd.bookedHalf === entry.half &&
-          (projectId ? cd.entry.projectId === projectId : true)
+          cd.entry.projectId === entry.projectId
       )
       .reduce((sum, cd) => sum + cd.count, 0);
 
@@ -66,7 +57,6 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  // Summary stats
   const totalSV = entries.reduce((sum, e) => sum + e.siteVisits, 0);
   const totalBookings = entries.reduce((sum, e) => sum + e.bookings, 0);
   const totalCancellations = entries.reduce((sum, e) => sum + e.cancellations, 0);
@@ -75,12 +65,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     entries: periodData,
-    summary: {
-      totalSV,
-      totalBookings,
-      totalCancellations,
-      totalNetBookings,
-      conversionRate,
-    },
+    summary: { totalSV, totalBookings, totalCancellations, totalNetBookings, conversionRate },
   });
 }

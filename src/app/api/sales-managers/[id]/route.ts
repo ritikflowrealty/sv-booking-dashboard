@@ -13,19 +13,14 @@ export async function DELETE(
 
   const { id } = await params;
 
-  // Team leads can only delete entries from their own sales managers
+  // Verify ownership
   if (session.user.role === "team_lead") {
-    const entry = await prisma.entry.findUnique({
-      where: { id },
-      include: { salesManager: true },
-    });
-    if (!entry || entry.salesManager.teamLeadId !== session.user.id) {
+    const manager = await prisma.salesManager.findUnique({ where: { id } });
+    if (!manager || manager.teamLeadId !== session.user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }
 
-  await prisma.cancelDetail.deleteMany({ where: { entryId: id } });
-  await prisma.entry.delete({ where: { id } });
-
-  return NextResponse.json({ message: "Entry deleted" });
+  await prisma.salesManager.delete({ where: { id } });
+  return NextResponse.json({ message: "Deleted" });
 }

@@ -15,15 +15,14 @@ export async function GET() {
       name: true,
       email: true,
       role: true,
-      projectId: true,
-      project: {
-        select: {
-          id: true,
-          name: true,
-          developer: { select: { name: true } },
+      createdAt: true,
+      userProjects: {
+        include: {
+          project: {
+            include: { developer: { select: { name: true } } },
+          },
         },
       },
-      createdAt: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -37,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, email, password, role, projectId } = await req.json();
+  const { name, email, password, role, projectIds } = await req.json();
 
   if (!name || !email || !password) {
     return NextResponse.json(
@@ -62,16 +61,11 @@ export async function POST(req: NextRequest) {
       email,
       password: hashedPassword,
       role: role || "team_lead",
-      projectId: projectId || null,
+      userProjects: {
+        create: (projectIds || []).map((pid: string) => ({ projectId: pid })),
+      },
     },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      projectId: true,
-      createdAt: true,
-    },
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
   });
 
   return NextResponse.json(user);

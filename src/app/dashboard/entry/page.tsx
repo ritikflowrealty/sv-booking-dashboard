@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { getCurrentPeriod, getMonthName } from "@/lib/utils";
 
 interface CancelDetail {
@@ -11,14 +10,10 @@ interface CancelDetail {
   bookedHalf: number;
 }
 
-interface ProjectOption {
-  id: string;
-  name: string;
-  developer: { name: string };
-}
+interface ProjectOption { id: string; name: string; developer: { name: string }; }
+interface SMOption { id: string; name: string; }
 
 export default function EntryPage() {
-  const { data: session } = useSession();
   const currentPeriod = getCurrentPeriod();
 
   const [year, setYear] = useState(currentPeriod.year);
@@ -28,29 +23,23 @@ export default function EntryPage() {
   const [bookings, setBookings] = useState(0);
   const [cancellations, setCancellations] = useState(0);
   const [cancelDetails, setCancelDetails] = useState<CancelDetail[]>([]);
-  const [selectedUser, setSelectedUser] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
-  const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
+  const [selectedSM, setSelectedSM] = useState("");
   const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [salesManagers, setSalesManagers] = useState<SMOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");
 
   useEffect(() => {
-    if (session?.user.role === "admin") {
-      fetch("/api/users").then((res) => res.json()).then((data) => setUsers(data));
-      fetch("/api/projects").then((res) => res.json()).then((data) => setProjects(data));
-    } else {
-      fetch("/api/projects").then((res) => res.json()).then((data) => setProjects(data));
-    }
-  }, [session]);
+    fetch("/api/my-projects").then((r) => r.json()).then(setProjects);
+    fetch("/api/sales-managers").then((r) => r.json()).then(setSalesManagers);
+  }, []);
 
   useEffect(() => {
-    if (cancellations > 0) {
-      if (cancelDetails.length === 0) {
-        setCancelDetails([{ count: cancellations, bookedYear: year, bookedMonth: month, bookedHalf: half }]);
-      }
-    } else {
+    if (cancellations > 0 && cancelDetails.length === 0) {
+      setCancelDetails([{ count: cancellations, bookedYear: year, bookedMonth: month, bookedHalf: half }]);
+    } else if (cancellations === 0) {
       setCancelDetails([]);
     }
   }, [cancellations]);
@@ -59,9 +48,7 @@ export default function EntryPage() {
     setCancelDetails([...cancelDetails, { count: 0, bookedYear: year, bookedMonth: month, bookedHalf: 1 }]);
   };
 
-  const removeCancelDetail = (index: number) => {
-    setCancelDetails(cancelDetails.filter((_, i) => i !== index));
-  };
+  const removeCancelDetail = (index: number) => setCancelDetails(cancelDetails.filter((_, i) => i !== index));
 
   const updateCancelDetail = (index: number, field: keyof CancelDetail, value: number) => {
     const updated = [...cancelDetails];
@@ -76,6 +63,13 @@ export default function EntryPage() {
     setSubmitting(true);
     setMessage("");
 
+    if (!selectedProject || !selectedSM) {
+      setMessage("Please select a project and sales manager");
+      setMessageType("error");
+      setSubmitting(false);
+      return;
+    }
+
     if (cancellations > 0 && totalCancelCount !== cancellations) {
       setMessage(`Cancellation details must add up to ${cancellations}. Current total: ${totalCancelCount}`);
       setMessageType("error");
@@ -88,35 +82,23 @@ export default function EntryPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          year,
-          month,
-          half,
-          siteVisits,
-          bookings,
-          cancellations,
+          year, month, half, siteVisits, bookings, cancellations,
           cancelDetails: cancellations > 0 ? cancelDetails : [],
-          userId: selectedUser || undefined,
-          projectId: selectedProject || undefined,
+          salesManagerId: selectedSM,
+          projectId: selectedProject,
         }),
       });
 
       if (res.ok) {
         setMessage("Entry saved successfully!");
         setMessageType("success");
-        setSiteVisits(0);
-        setBookings(0);
-        setCancellations(0);
-        setCancelDetails([]);
+        setSiteVisits(0); setBookings(0); setCancellations(0); setCancelDetails([]);
       } else {
         const data = await res.json();
         setMessage(data.error || "Failed to save entry");
         setMessageType("error");
       }
-    } catch {
-      setMessage("Failed to save entry");
-      setMessageType("error");
-    }
-
+    } catch { setMessage("Failed to save entry"); setMessageType("error"); }
     setSubmitting(false);
   };
 
@@ -128,6 +110,27 @@ export default function EntryPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Project & Sales Manager */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Select Project and Sales Manager</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Project</label>
+              <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                <option value="">Select Project</option>
+                {projects.map((p) => (<option key={p.id} value={p.id}>{p.developer.name} / {p.name}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Sales Manager</label>
+              <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                <option value="">Select Sales Manager</option>
+                {salesManagers.map((sm) => (<option key={sm.id} value={sm.id}>{sm.name}</option>))}
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Period Selection */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Select Period</h3>
@@ -152,25 +155,6 @@ export default function EntryPage() {
               </select>
             </div>
           </div>
-
-          {/* Project Selection */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Project</label>
-            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option value="">Select Project</option>
-              {projects.map((p) => (<option key={p.id} value={p.id}>{p.developer.name} / {p.name}</option>))}
-            </select>
-          </div>
-
-          {session?.user.role === "admin" && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Team Lead</label>
-              <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                <option value="">Select (or yourself)</option>
-                {users.map((u) => (<option key={u.id} value={u.id}>{u.name}</option>))}
-              </select>
-            </div>
-          )}
         </div>
 
         {/* Numbers Input */}
@@ -198,17 +182,13 @@ export default function EntryPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900">Cancellation Details</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Specify when these cancelled units were originally booked</p>
+                <p className="text-xs text-gray-500 mt-0.5">When were these cancelled units originally booked?</p>
               </div>
               <button type="button" onClick={addCancelDetail} className="text-sm text-teal-600 hover:text-teal-700 font-medium">+ Add Row</button>
             </div>
-
             {totalCancelCount !== cancellations && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-lg text-sm mb-4">
-                Total cancellation count ({totalCancelCount}) must equal {cancellations}
-              </div>
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-lg text-sm mb-4">Total ({totalCancelCount}) must equal {cancellations}</div>
             )}
-
             <div className="space-y-3">
               {cancelDetails.map((detail, index) => (
                 <div key={index} className="flex items-end gap-3 p-3 bg-gray-50 rounded-lg">
@@ -245,9 +225,7 @@ export default function EntryPage() {
         )}
 
         {message && (
-          <div className={`px-4 py-3 rounded-lg text-sm ${messageType === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
-            {message}
-          </div>
+          <div className={`px-4 py-3 rounded-lg text-sm ${messageType === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>{message}</div>
         )}
 
         <button type="submit" disabled={submitting} className="w-full sm:w-auto bg-teal-700 hover:bg-teal-800 text-white font-medium py-2.5 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
