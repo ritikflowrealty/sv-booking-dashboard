@@ -161,7 +161,7 @@ export default function AnalyticsPage() {
       {/* Year chips */}
       <div className="flex items-center gap-1">
         <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1">Year</span>
-        {[2026, 2027, 2028, 2029, 2030].map((y) => (
+        {[2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
           <button key={y} onClick={() => toggleYear(y)} className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all duration-100 ${selectedYears.includes(y) ? "bg-[#115e59] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
             {y}
           </button>

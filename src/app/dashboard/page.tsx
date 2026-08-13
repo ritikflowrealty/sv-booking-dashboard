@@ -35,6 +35,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear()]);
   const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
   const [selectedMonths, setSelectedMonths] = useState<number[]>([]);
   const [selectedProject, setSelectedProject] = useState("");
@@ -48,6 +49,12 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch("/api/my-projects").then((r) => r.json()).then(setProjects);
     fetch("/api/sales-managers").then((r) => r.json()).then(setAllSalesManagers);
+    fetch("/api/available-years").then((r) => r.json()).then((years: number[]) => {
+      setAvailableYears(years);
+      if (years.length > 0 && !years.includes(new Date().getFullYear())) {
+        setSelectedYears([years[years.length - 1]]);
+      }
+    });
   }, [session]);
 
   const filteredSalesManagers = useMemo(() => {
@@ -186,25 +193,25 @@ export default function DashboardPage() {
         </div>
 
         {/* Year + Month multi-select chips */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-1 flex-wrap">
             <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1">Year</span>
-            {[2026, 2027, 2028, 2029, 2030].map((y) => (
+            {availableYears.map((y) => (
               <button key={y} onClick={() => toggleYear(y)} className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all duration-100 ${selectedYears.includes(y) ? "bg-[#115e59] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
                 {y}
               </button>
             ))}
           </div>
-          <div className="w-px h-5 bg-[#e8eced]"></div>
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1">Month</span>
+          <div className="hidden sm:block w-px h-5 bg-[#e8eced]"></div>
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
+            <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1 shrink-0">Month</span>
             {MONTHS.map((m, i) => (
-              <button key={i} onClick={() => toggleMonth(i + 1)} className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all duration-100 ${selectedMonths.includes(i + 1) ? "bg-[#0d9488] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
+              <button key={i} onClick={() => toggleMonth(i + 1)} className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all duration-100 shrink-0 ${selectedMonths.includes(i + 1) ? "bg-[#0d9488] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
                 {m}
               </button>
             ))}
             {selectedMonths.length > 0 && (
-              <button onClick={() => setSelectedMonths([])} className="px-2 py-1 rounded-[6px] text-[11px] font-medium text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fecaca] transition-all">Clear</button>
+              <button onClick={() => setSelectedMonths([])} className="px-2 py-1 rounded-[6px] text-[11px] font-medium text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fecaca] transition-all shrink-0">Clear</button>
             )}
           </div>
         </div>

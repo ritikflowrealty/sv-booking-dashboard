@@ -144,20 +144,24 @@ export default function EntryPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Year</label>
               <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
+                {Array.from({ length: new Date().getFullYear() - 2024 }, (_, i) => 2025 + i).map((y) => (<option key={y} value={y}>{y}</option>))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Month</label>
               <select value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                {Array.from({ length: 12 }, (_, i) => (<option key={i + 1} value={i + 1}>{getMonthName(i + 1)}</option>))}
+                {Array.from({ length: 12 }, (_, i) => i + 1)
+                  .filter((m) => year < new Date().getFullYear() || m <= new Date().getMonth() + 1)
+                  .map((m) => (<option key={m} value={m}>{getMonthName(m)}</option>))}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Period</label>
               <select value={half} onChange={(e) => setHalf(parseInt(e.target.value))} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
                 <option value={1}>1st to 15th</option>
-                <option value={2}>16th to End</option>
+                {(year < new Date().getFullYear() || month < new Date().getMonth() + 1 || new Date().getDate() > 15) && (
+                  <option value={2}>16th to End</option>
+                )}
               </select>
             </div>
           </div>
@@ -205,7 +209,7 @@ export default function EntryPage() {
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-gray-600 mb-1">Booked Year</label>
                     <select value={detail.bookedYear} onChange={(e) => updateCancelDetail(index, "bookedYear", parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                      {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
+                      {[2025, 2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
                     </select>
                   </div>
                   <div className="flex-1">

@@ -51,7 +51,7 @@ export default function RecordsPage() {
           <p className="text-gray-500">View and delete entries</p>
         </div>
         <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-          {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
+          {[2025, 2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
         </select>
       </div>
 

@@ -108,3 +108,38 @@ td[class*="text-right"] {
   box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
   border-color: #0d9488;
 }
+
+
+/* Mobile slide-in animation */
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slide-in 0.2s ease-out;
+}
+
+/* Mobile responsive overrides */
+@media (max-width: 1023px) {
+  .select-sm {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Stack KPI cards 2-col on small screens */
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* Hide scrollbar but allow scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
