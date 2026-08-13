@@ -10,14 +10,8 @@ import { getPeriodLabel } from "@/lib/utils";
 import { Users, Calendar, Target, XCircle, TrendingUp } from "lucide-react";
 
 interface EntryData {
-  id: string;
-  year: number;
-  month: number;
-  half: number;
-  siteVisits: number;
-  bookings: number;
-  cancellations: number;
-  netBookings: number;
+  id: string; year: number; month: number; half: number;
+  siteVisits: number; bookings: number; cancellations: number; netBookings: number;
   salesManager: { id: string; name: string };
   project: { id: string; name: string; developer: { id: string; name: string } };
 }
@@ -50,13 +44,14 @@ export default function DashboardPage() {
     const params = new URLSearchParams({ year: year.toString() });
     if (selectedProject) params.set("projectId", selectedProject);
     if (selectedSM) params.set("salesManagerId", selectedSM);
-
-    fetch(`/api/dashboard?${params}`)
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+    fetch(`/api/dashboard?${params}`).then((r) => r.json()).then((d) => { setData(d); setLoading(false); });
   }, [year, selectedProject, selectedSM]);
 
-  if (loading || !data) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>;
+  if (loading || !data) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-6 h-6 border-2 border-[#0d9488] border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   const chartData = data.entries.map((e) => ({
     period: getPeriodLabel(e.year, e.month, e.half),
@@ -72,24 +67,25 @@ export default function DashboardPage() {
     { name: "Net Bookings", value: Math.max(0, data.summary.totalNetBookings) },
     { name: "Cancellations", value: data.summary.totalCancellations },
   ];
-  const COLORS = ["#0f766e", "#dc2626"];
+  const COLORS = ["#0d9488", "#b91c1c"];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500">Overview of site visits, bookings and performance</p>
+          <h1 className="text-[22px] font-semibold text-[#1a1a2e] tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Dashboard</h1>
+          <p className="text-[13px] text-[#64748b] mt-0.5">Site visits, bookings and performance overview</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="px-3 py-1.5 border border-[#e8eced] rounded-[8px] text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20">
             {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
           </select>
-          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="px-3 py-1.5 border border-[#e8eced] rounded-[8px] text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20">
             <option value="">All Projects</option>
             {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
           </select>
-          <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="px-3 py-1.5 border border-[#e8eced] rounded-[8px] text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20">
             <option value="">All Sales Managers</option>
             {salesManagers.map((sm) => (<option key={sm.id} value={sm.id}>{sm.name}</option>))}
           </select>
@@ -97,98 +93,105 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KPICard title="Total Site Visits" value={data.summary.totalSV} icon={<Users className="w-5 h-5" />} color="teal" />
-        <KPICard title="Total Bookings" value={data.summary.totalBookings} icon={<Calendar className="w-5 h-5" />} color="emerald" />
-        <KPICard title="Net Bookings" value={data.summary.totalNetBookings} icon={<Target className="w-5 h-5" />} color="cyan" />
-        <KPICard title="Cancellations" value={data.summary.totalCancellations} icon={<XCircle className="w-5 h-5" />} color="red" />
-        <KPICard title="Conversion Rate" value={`${data.summary.conversionRate}%`} icon={<TrendingUp className="w-5 h-5" />} color="amber" />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <KPICard title="Site Visits" value={data.summary.totalSV} icon={<Users className="w-4 h-4" />} color="teal" />
+        <KPICard title="Bookings" value={data.summary.totalBookings} icon={<Calendar className="w-4 h-4" />} color="emerald" />
+        <KPICard title="Net Bookings" value={data.summary.totalNetBookings} icon={<Target className="w-4 h-4" />} color="cyan" />
+        <KPICard title="Cancellations" value={data.summary.totalCancellations} icon={<XCircle className="w-4 h-4" />} color="red" />
+        <KPICard title="Conversion" value={`${data.summary.conversionRate}%`} icon={<TrendingUp className="w-4 h-4" />} color="amber" />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Site Visits vs Bookings</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="period" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} /><Tooltip /><Legend />
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ChartCard title="Site Visits vs Bookings">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chartData} barGap={2}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#94a3b8" }} angle={-30} textAnchor="end" height={60} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="Site Visits" fill="#0d9488" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Bookings" fill="#059669" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Net Bookings Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        </ChartCard>
+
+        <ChartCard title="Net Bookings Trend">
+          <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="period" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} /><Tooltip /><Legend />
-              <Area type="monotone" dataKey="Net Bookings" stroke="#0f766e" fill="#ccfbf1" strokeWidth={2} />
-              <Area type="monotone" dataKey="Cancellations" stroke="#dc2626" fill="#fef2f2" strokeWidth={2} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#94a3b8" }} angle={-30} textAnchor="end" height={60} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Area type="monotone" dataKey="Net Bookings" stroke="#115e59" fill="#ccfbf1" strokeWidth={2} />
+              <Area type="monotone" dataKey="Cancellations" stroke="#b91c1c" fill="#fef2f2" strokeWidth={1.5} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </ChartCard>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Conversion Rate (%)</h3>
-          <ResponsiveContainer width="100%" height={280}>
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <ChartCard title="Conversion Rate (%)" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={conversionData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="period" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" height={60} />
-              <YAxis tick={{ fontSize: 12 }} unit="%" /><Tooltip />
-              <Line type="monotone" dataKey="Conversion %" stroke="#d97706" strokeWidth={2} dot={{ fill: "#d97706" }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="period" tick={{ fontSize: 11, fill: "#94a3b8" }} angle={-30} textAnchor="end" height={60} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 12 }} />
+              <Line type="monotone" dataKey="Conversion %" stroke="#b45309" strokeWidth={2} dot={{ fill: "#b45309", r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Bookings vs Cancellations</h3>
-          <ResponsiveContainer width="100%" height={280}>
+        </ChartCard>
+
+        <ChartCard title="Bookings vs Cancellations">
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} paddingAngle={4} dataKey="value" strokeWidth={0}>
                 {pieData.map((_, i) => (<Cell key={i} fill={COLORS[i]} />))}
               </Pie>
-              <Tooltip /><Legend />
+              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </ChartCard>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-5 border-b border-gray-200"><h3 className="text-sm font-semibold text-gray-900">Period-wise Breakdown</h3></div>
+      {/* Data Table */}
+      <div className="bg-white rounded-[14px] border border-[#e8eced] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#f1f3f4]">
+          <h3 className="text-[14px] font-semibold text-[#1a1a2e]" style={{ fontFamily: "var(--font-display)" }}>Period-wise Breakdown</h3>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+          <table className="w-full text-[13px]">
+            <thead className="bg-[#fafbfc]">
               <tr>
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Period</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Sales Manager</th>
-                <th className="text-left px-5 py-3 font-medium text-gray-600">Project</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-600">SV</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-600">Bookings</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-600">Net</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-600">Cancellations</th>
-                <th className="text-right px-5 py-3 font-medium text-gray-600">Conv %</th>
+                <th className="text-left px-5 py-2.5 font-medium text-[#64748b]">Period</th>
+                <th className="text-left px-5 py-2.5 font-medium text-[#64748b]">Sales Manager</th>
+                <th className="text-left px-5 py-2.5 font-medium text-[#64748b]">Project</th>
+                <th className="text-right px-5 py-2.5 font-medium text-[#64748b]">SV</th>
+                <th className="text-right px-5 py-2.5 font-medium text-[#64748b]">Bookings</th>
+                <th className="text-right px-5 py-2.5 font-medium text-[#64748b]">Net</th>
+                <th className="text-right px-5 py-2.5 font-medium text-[#64748b]">Cancel</th>
+                <th className="text-right px-5 py-2.5 font-medium text-[#64748b]">Conv %</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-[#f1f3f4]">
               {data.entries.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 text-gray-900">{getPeriodLabel(e.year, e.month, e.half)}</td>
-                  <td className="px-5 py-3 text-gray-600">{e.salesManager.name}</td>
-                  <td className="px-5 py-3 text-gray-600">{e.project.name}</td>
-                  <td className="text-right px-5 py-3 font-medium">{e.siteVisits}</td>
-                  <td className="text-right px-5 py-3 text-emerald-600 font-medium">{e.bookings}</td>
-                  <td className="text-right px-5 py-3 font-medium"><span className={e.netBookings >= 0 ? "text-teal-600" : "text-red-600"}>{e.netBookings}</span></td>
-                  <td className="text-right px-5 py-3 text-red-600 font-medium">{e.cancellations}</td>
-                  <td className="text-right px-5 py-3 text-amber-600 font-medium">{e.siteVisits > 0 ? ((e.bookings / e.siteVisits) * 100).toFixed(1) : "0"}%</td>
+                <tr key={e.id} className="hover:bg-[#f8fafb] transition-colors duration-100">
+                  <td className="px-5 py-2.5 text-[#1a1a2e]">{getPeriodLabel(e.year, e.month, e.half)}</td>
+                  <td className="px-5 py-2.5 text-[#64748b]">{e.salesManager.name}</td>
+                  <td className="px-5 py-2.5 text-[#64748b]">{e.project.name}</td>
+                  <td className="text-right px-5 py-2.5 font-medium text-[#1a1a2e] tabular-nums">{e.siteVisits}</td>
+                  <td className="text-right px-5 py-2.5 font-medium text-[#047857] tabular-nums">{e.bookings}</td>
+                  <td className="text-right px-5 py-2.5 font-medium tabular-nums"><span className={e.netBookings >= 0 ? "text-[#115e59]" : "text-[#b91c1c]"}>{e.netBookings}</span></td>
+                  <td className="text-right px-5 py-2.5 font-medium text-[#b91c1c] tabular-nums">{e.cancellations}</td>
+                  <td className="text-right px-5 py-2.5 font-medium text-[#b45309] tabular-nums">{e.siteVisits > 0 ? ((e.bookings / e.siteVisits) * 100).toFixed(1) : "0"}%</td>
                 </tr>
               ))}
-              {data.entries.length === 0 && (<tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No data available</td></tr>)}
+              {data.entries.length === 0 && (<tr><td colSpan={8} className="px-5 py-10 text-center text-[#94a3b8]">No data available for this period</td></tr>)}
             </tbody>
           </table>
         </div>
@@ -197,15 +200,32 @@ export default function DashboardPage() {
   );
 }
 
-function KPICard({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) {
-  const colorMap: Record<string, string> = { teal: "bg-teal-50 text-teal-600", emerald: "bg-emerald-50 text-emerald-600", cyan: "bg-cyan-50 text-cyan-600", red: "bg-red-50 text-red-600", amber: "bg-amber-50 text-amber-600" };
+function ChartCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</span>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorMap[color]}`}>{icon}</div>
+    <div className={`bg-white rounded-[14px] border border-[#e8eced] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-5 ${className || ""}`}>
+      <h3 className="text-[13px] font-semibold text-[#1a1a2e] mb-4" style={{ fontFamily: "var(--font-display)" }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function KPICard({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) {
+  const styles: Record<string, { bg: string; text: string }> = {
+    teal: { bg: "bg-[#f0fdfa]", text: "text-[#115e59]" },
+    emerald: { bg: "bg-[#ecfdf5]", text: "text-[#047857]" },
+    cyan: { bg: "bg-[#ecfeff]", text: "text-[#0e7490]" },
+    red: { bg: "bg-[#fef2f2]", text: "text-[#b91c1c]" },
+    amber: { bg: "bg-[#fffbeb]", text: "text-[#b45309]" },
+  };
+  const s = styles[color];
+
+  return (
+    <div className="bg-white rounded-[14px] border border-[#e8eced] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4">
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider">{title}</span>
+        <div className={`w-7 h-7 rounded-[8px] flex items-center justify-center ${s.bg} ${s.text}`}>{icon}</div>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-[22px] font-semibold text-[#1a1a2e] tabular-nums" style={{ fontFamily: "var(--font-display)" }}>{value}</p>
     </div>
   );
 }

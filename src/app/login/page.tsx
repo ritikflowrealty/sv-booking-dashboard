@@ -32,48 +32,56 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#f0fdfa]">
+      <div className="w-full max-w-sm mx-4">
+        <div className="bg-white rounded-[18px] shadow-[0_4px_24px_rgba(0,0,0,0.06)] p-8">
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <Image src="/logo.png" alt="Flow Realty" width={80} height={80} className="rounded-xl" />
+            <div className="flex justify-center mb-5">
+              <Image
+                src="/logo.png"
+                alt="Flow Realty"
+                width={64}
+                height={64}
+                className="rounded-[14px]"
+              />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Flow Realty</h1>
-            <p className="text-gray-500 mt-1">SV and Booking Dashboard</p>
+            <h1 className="text-xl font-semibold text-[#1a1a2e] tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+              Flow Realty
+            </h1>
+            <p className="text-[13px] text-[#64748b] mt-1">SV and Booking Dashboard</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-[#fef2f2] border border-[#fecaca] text-[#b91c1c] px-3.5 py-2.5 rounded-[10px] text-[13px]">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-[13px] font-medium text-[#374151] mb-1.5">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
-                placeholder="Enter your email"
+                className="w-full px-3.5 py-2.5 border border-[#e8eced] rounded-[10px] text-[14px] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 focus:border-[#0d9488]"
+                placeholder="you@flowrealty.in"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-[13px] font-medium text-[#374151] mb-1.5">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
-                placeholder="Enter your password"
+                className="w-full px-3.5 py-2.5 border border-[#e8eced] rounded-[10px] text-[14px] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#0d9488]/30 focus:border-[#0d9488]"
+                placeholder="Enter password"
                 required
               />
             </div>
@@ -81,7 +89,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2.5 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[#115e59] hover:bg-[#0c4a46] text-white font-medium py-2.5 px-4 rounded-[10px] text-[14px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>

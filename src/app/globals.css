@@ -1,19 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #f9fafb;
-  --foreground: #111827;
+  --font-display: 'DM Sans', sans-serif;
+  --font-body: 'Instrument Sans', sans-serif;
+
+  --background: #fafbfc;
+  --foreground: #1a1a2e;
   --card: #ffffff;
-  --primary: #0f766e;
-  --primary-light: #14b8a6;
-  --primary-dark: #0d5e58;
+  --card-hover: #f8fafb;
+
+  --primary: #115e59;
+  --primary-light: #0d9488;
+  --primary-lighter: #ccfbf1;
+  --primary-dark: #0c4a46;
+
   --secondary: #f0fdfa;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  --border: #e5e7eb;
-  --destructive: #dc2626;
-  --success: #059669;
-  --warning: #d97706;
+
+  --border: #e8eced;
+  --border-light: #f1f3f4;
+
+  --destructive: #b91c1c;
+  --destructive-light: #fef2f2;
+  --success: #047857;
+  --success-light: #ecfdf5;
+  --warning: #b45309;
+  --warning-light: #fffbeb;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -23,4 +46,47 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-body);
+  font-feature-settings: 'cv11' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Transitions */
+a, button, input, select, textarea {
+  transition: all 0.15s ease-out;
+}
+
+/* Focus states */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 1px;
+}
+
+/* Scrollbar refinement */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Table number alignment */
+td[class*="text-right"] {
+  font-variant-numeric: tabular-nums;
 }
