@@ -30,75 +30,113 @@ interface SidebarProps {
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
-  const links = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "team_lead"] },
-    { href: "/dashboard/entry", label: "Data Entry", icon: PlusCircle, roles: ["admin", "team_lead"] },
-    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "team_lead"] },
-    { href: "/dashboard/records", label: "Records", icon: FileText, roles: ["admin", "team_lead"] },
-    { href: "/dashboard/sales-managers", label: "Sales Managers", icon: UserCheck, roles: ["admin", "team_lead"] },
-    { href: "/dashboard/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["admin", "team_lead"] },
-    { href: "/dashboard/projects", label: "Projects", icon: FolderKanban, roles: ["admin"] },
-    { href: "/dashboard/developers", label: "Developers", icon: Building2, roles: ["admin"] },
-    { href: "/dashboard/users", label: "Team Leads", icon: Users, roles: ["admin"] },
-    { href: "/dashboard/backup", label: "Backup", icon: DatabaseBackup, roles: ["admin"] },
+  // Grouped by workflow: Daily ops first, then management, then admin
+  const sections = [
+    {
+      label: "",
+      links: [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "team_lead"] },
+      ],
+    },
+    {
+      label: "Data",
+      links: [
+        { href: "/dashboard/entry", label: "Data Entry", icon: PlusCircle, roles: ["admin", "team_lead"] },
+        { href: "/dashboard/bulk-upload", label: "Bulk Upload", icon: Upload, roles: ["admin", "team_lead"] },
+        { href: "/dashboard/records", label: "Records", icon: FileText, roles: ["admin", "team_lead"] },
+      ],
+    },
+    {
+      label: "Insights",
+      links: [
+        { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, roles: ["admin", "team_lead"] },
+      ],
+    },
+    {
+      label: "Team",
+      links: [
+        { href: "/dashboard/sales-managers", label: "Sales Managers", icon: UserCheck, roles: ["admin", "team_lead"] },
+        { href: "/dashboard/users", label: "Team Leads", icon: Users, roles: ["admin"] },
+      ],
+    },
+    {
+      label: "Setup",
+      links: [
+        { href: "/dashboard/projects", label: "Projects", icon: FolderKanban, roles: ["admin"] },
+        { href: "/dashboard/developers", label: "Developers", icon: Building2, roles: ["admin"] },
+        { href: "/dashboard/backup", label: "Backup", icon: DatabaseBackup, roles: ["admin"] },
+      ],
+    },
   ];
 
-  const filteredLinks = links.filter((link) => link.roles.includes(user.role));
-
   return (
-    <aside className="w-[260px] bg-white border-r border-[#e8eced] flex flex-col min-h-screen">
+    <aside className="w-[240px] bg-white border-r border-[#e8eced] flex flex-col min-h-screen">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-[#e8eced]">
-        <div className="flex items-center gap-3">
-          <Image src="/logo.png" alt="Flow Realty" width={36} height={36} className="rounded-[10px]" />
+      <div className="px-5 py-4 border-b border-[#e8eced]">
+        <div className="flex items-center gap-2.5">
+          <Image src="/logo.png" alt="Flow Realty" width={32} height={32} className="rounded-[8px]" />
           <div>
-            <h2 className="font-semibold text-[14px] text-[#1a1a2e] tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Flow Realty</h2>
-            <p className="text-[11px] text-[#94a3b8]">SV Tracker</p>
+            <h2 className="font-semibold text-[13px] text-[#1a1a2e] tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Flow Realty</h2>
+            <p className="text-[10px] text-[#94a3b8] leading-tight">Booking & SV Tracker</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {filteredLinks.map((link) => {
-          const Icon = link.icon;
-          const isActive = pathname === link.href;
+      <nav className="flex-1 px-3 py-3 overflow-y-auto">
+        {sections.map((section, sIdx) => {
+          const visibleLinks = section.links.filter((l) => l.roles.includes(user.role));
+          if (visibleLinks.length === 0) return null;
+
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-150",
-                isActive
-                  ? "bg-[#f0fdfa] text-[#115e59]"
-                  : "text-[#64748b] hover:bg-[#f8fafb] hover:text-[#1a1a2e]"
+            <div key={sIdx} className={sIdx > 0 ? "mt-4" : ""}>
+              {section.label && (
+                <p className="px-3 mb-1 text-[10px] font-semibold text-[#b0b8c1] uppercase tracking-wider">{section.label}</p>
               )}
-            >
-              <Icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2.2 : 1.8} />
-              {link.label}
-            </Link>
+              <div className="space-y-0.5">
+                {visibleLinks.map((link) => {
+                  const Icon = link.icon;
+                  const isActive = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-[7px] rounded-[8px] text-[13px] font-medium transition-all duration-100",
+                        isActive
+                          ? "bg-[#f0fdfa] text-[#115e59]"
+                          : "text-[#5a6474] hover:bg-[#f8fafb] hover:text-[#1a1a2e]"
+                      )}
+                    >
+                      <Icon className="w-[16px] h-[16px]" strokeWidth={isActive ? 2.2 : 1.7} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>
 
       {/* User */}
-      <div className="px-3 py-4 border-t border-[#e8eced]">
-        <div className="flex items-center gap-2.5 px-3 py-2 mb-1">
-          <div className="w-7 h-7 bg-[#f0fdfa] rounded-full flex items-center justify-center">
-            <span className="text-[11px] font-semibold text-[#115e59]">
+      <div className="px-3 py-3 border-t border-[#e8eced]">
+        <div className="flex items-center gap-2.5 px-3 py-1.5 mb-1">
+          <div className="w-6 h-6 bg-[#f0fdfa] rounded-full flex items-center justify-center">
+            <span className="text-[10px] font-semibold text-[#115e59]">
               {user.name.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-[#1a1a2e] truncate">{user.name}</p>
-            <p className="text-[11px] text-[#94a3b8] capitalize">{user.role.replace("_", " ")}</p>
+            <p className="text-[12px] font-medium text-[#1a1a2e] truncate">{user.name}</p>
+            <p className="text-[10px] text-[#94a3b8] capitalize">{user.role.replace("_", " ")}</p>
           </div>
         </div>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[13px] font-medium text-[#64748b] hover:bg-[#fef2f2] hover:text-[#b91c1c] transition-all duration-150 w-full"
+          className="flex items-center gap-2.5 px-3 py-[7px] rounded-[8px] text-[12px] font-medium text-[#5a6474] hover:bg-[#fef2f2] hover:text-[#b91c1c] transition-all duration-100 w-full"
         >
-          <LogOut className="w-[18px] h-[18px]" strokeWidth={1.8} />
+          <LogOut className="w-[15px] h-[15px]" strokeWidth={1.7} />
           Sign Out
         </button>
       </div>

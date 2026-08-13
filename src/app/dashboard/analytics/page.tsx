@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-            {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
+            {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
           </select>
           {session?.user.role === "admin" && (
             <>

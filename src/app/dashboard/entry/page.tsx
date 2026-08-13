@@ -144,7 +144,7 @@ export default function EntryPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Year</label>
               <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
+                {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
               </select>
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function EntryPage() {
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-gray-600 mb-1">Booked Year</label>
                     <select value={detail.bookedYear} onChange={(e) => updateCancelDetail(index, "bookedYear", parseInt(e.target.value))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                      {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
+                      {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
                     </select>
                   </div>
                   <div className="flex-1">

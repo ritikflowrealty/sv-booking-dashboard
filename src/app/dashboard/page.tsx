@@ -79,7 +79,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
           <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="px-3 py-1.5 border border-[#e8eced] rounded-[8px] text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20">
-            {[2024, 2025, 2026, 2027].map((y) => (<option key={y} value={y}>{y}</option>))}
+            {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
           </select>
           <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="px-3 py-1.5 border border-[#e8eced] rounded-[8px] text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]/20">
             <option value="">All Projects</option>
