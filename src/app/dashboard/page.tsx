@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell,
+  ComposedChart, Line,
 } from "recharts";
 import { getPeriodLabel, getMonthName } from "@/lib/utils";
-import { Users, Calendar, Target, XCircle, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Calendar, Target, XCircle, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 
 type ZoomLevel = "15d" | "month" | "quarter" | "year";
@@ -28,12 +29,14 @@ interface ProjectOption { id: string; name: string; developer: { name: string };
 interface SMOption { id: string; name: string; salesManagerProjects?: { project: { id: string } }[]; }
 
 const ZOOM_LABELS: Record<ZoomLevel, string> = { "15d": "15 Days", month: "Monthly", quarter: "Quarterly", year: "Yearly" };
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [data, setData] = useState<DashboardData | null>(null);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([]);
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedSM, setSelectedSM] = useState("");
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -47,7 +50,6 @@ export default function DashboardPage() {
     fetch("/api/sales-managers").then((r) => r.json()).then(setAllSalesManagers);
   }, [session]);
 
-  // Filter sales managers by selected project
   const filteredSalesManagers = useMemo(() => {
     if (!selectedProject) return allSalesManagers;
     return allSalesManagers.filter((sm) =>
@@ -55,20 +57,29 @@ export default function DashboardPage() {
     );
   }, [selectedProject, allSalesManagers]);
 
-  // Reset SM when project changes
-  useEffect(() => {
-    setSelectedSM("");
-  }, [selectedProject]);
+  useEffect(() => { setSelectedSM(""); }, [selectedProject]);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     setLoading(true);
-    const params = new URLSearchParams({ year: year.toString() });
+    const params = new URLSearchParams();
+    params.set("years", selectedYears.join(","));
+    if (selectedMonths.length > 0) params.set("months", selectedMonths.join(","));
     if (selectedProject) params.set("projectId", selectedProject);
     if (selectedSM) params.set("salesManagerId", selectedSM);
     fetch(`/api/dashboard?${params}`).then((r) => r.json()).then((d) => { setData(d); setLoading(false); setPage(0); });
-  }, [year, selectedProject, selectedSM]);
+  }, [selectedYears, selectedMonths, selectedProject, selectedSM]);
 
-  // Aggregate chart data based on zoom level
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const toggleYear = (y: number) => {
+    setSelectedYears((prev) => prev.includes(y) ? (prev.length > 1 ? prev.filter((v) => v !== y) : prev) : [...prev, y].sort());
+  };
+
+  const toggleMonth = (m: number) => {
+    setSelectedMonths((prev) => prev.includes(m) ? prev.filter((v) => v !== m) : [...prev, m].sort((a, b) => a - b));
+  };
+
+  // Aggregate data based on zoom
   const chartData = useMemo(() => {
     if (!data) return [];
     const entries = data.entries;
@@ -81,23 +92,17 @@ export default function DashboardPage() {
       }));
     }
 
+    const map = new Map<string, { sv: number; bookings: number; net: number; cancel: number }>();
+
     if (zoom === "month") {
-      const map = new Map<string, { sv: number; bookings: number; net: number; cancel: number }>();
       entries.forEach((e) => {
-        const key = `${getMonthName(e.month).slice(0, 3)} ${e.year}`;
+        const key = `${MONTHS[e.month - 1]} ${e.year}`;
         const cur = map.get(key) || { sv: 0, bookings: 0, net: 0, cancel: 0 };
         cur.sv += e.siteVisits; cur.bookings += e.bookings; cur.net += e.netBookings; cur.cancel += e.cancellations;
         map.set(key, cur);
       });
-      return Array.from(map.entries()).map(([label, v]) => ({
-        label, ...v, conv: v.sv > 0 ? parseFloat(((v.bookings / v.sv) * 100).toFixed(1)) : 0,
-      }));
-    }
-
-    if (zoom === "quarter") {
-      const map = new Map<string, { sv: number; bookings: number; net: number; cancel: number }>();
+    } else if (zoom === "quarter") {
       entries.forEach((e) => {
-        // FY quarters: Apr-Jun = Q1, Jul-Sep = Q2, Oct-Dec = Q3, Jan-Mar = Q4
         let fyQ: string;
         if (e.month >= 4 && e.month <= 6) fyQ = "Q1";
         else if (e.month >= 7 && e.month <= 9) fyQ = "Q2";
@@ -109,23 +114,38 @@ export default function DashboardPage() {
         cur.sv += e.siteVisits; cur.bookings += e.bookings; cur.net += e.netBookings; cur.cancel += e.cancellations;
         map.set(key, cur);
       });
-      return Array.from(map.entries()).map(([label, v]) => ({
-        label, ...v, conv: v.sv > 0 ? parseFloat(((v.bookings / v.sv) * 100).toFixed(1)) : 0,
-      }));
+    } else {
+      entries.forEach((e) => {
+        const key = `${e.year}`;
+        const cur = map.get(key) || { sv: 0, bookings: 0, net: 0, cancel: 0 };
+        cur.sv += e.siteVisits; cur.bookings += e.bookings; cur.net += e.netBookings; cur.cancel += e.cancellations;
+        map.set(key, cur);
+      });
     }
 
-    // year
-    const totals = entries.reduce((acc, e) => {
-      acc.sv += e.siteVisits; acc.bookings += e.bookings; acc.net += e.netBookings; acc.cancel += e.cancellations;
-      return acc;
-    }, { sv: 0, bookings: 0, net: 0, cancel: 0 });
-    return [{ label: `FY ${year}`, ...totals, conv: totals.sv > 0 ? parseFloat(((totals.bookings / totals.sv) * 100).toFixed(1)) : 0 }];
-  }, [data, zoom, year]);
+    return Array.from(map.entries()).map(([label, v]) => ({
+      label, ...v, conv: v.sv > 0 ? parseFloat(((v.bookings / v.sv) * 100).toFixed(1)) : 0,
+    }));
+  }, [data, zoom]);
+
+  // Top performers
+  const topPerformers = useMemo(() => {
+    if (!data) return [];
+    const smMap = new Map<string, { name: string; sv: number; bookings: number }>();
+    data.entries.forEach((e) => {
+      const cur = smMap.get(e.salesManager.id) || { name: e.salesManager.name, sv: 0, bookings: 0 };
+      cur.sv += e.siteVisits; cur.bookings += e.bookings;
+      smMap.set(e.salesManager.id, cur);
+    });
+    return Array.from(smMap.values())
+      .map((v) => ({ ...v, conv: v.sv > 0 ? parseFloat(((v.bookings / v.sv) * 100).toFixed(1)) : 0 }))
+      .sort((a, b) => b.bookings - a.bookings)
+      .slice(0, 5);
+  }, [data]);
 
   // Paginated table
   const tableEntries = useMemo(() => {
     if (!data) return [];
-    // Sort chronologically descending
     return [...data.entries].sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       if (a.month !== b.month) return b.month - a.month;
@@ -147,24 +167,47 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#1a1a2e] tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Dashboard</h1>
-          <p className="text-[13px] text-[#64748b] mt-0.5">Performance overview for decision-making</p>
+      {/* Header + Filters */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-[22px] font-semibold text-[#1a1a2e] tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Dashboard</h1>
+            <p className="text-[13px] text-[#64748b] mt-0.5">Performance overview for decision-making</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="select-sm">
+              <option value="">All Projects</option>
+              {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+            </select>
+            <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="select-sm">
+              <option value="">All Sales Managers</option>
+              {filteredSalesManagers.map((sm) => (<option key={sm.id} value={sm.id}>{sm.name}</option>))}
+            </select>
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="select-sm">
-            {[2026, 2027, 2028, 2029, 2030].map((y) => (<option key={y} value={y}>{y}</option>))}
-          </select>
-          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="select-sm">
-            <option value="">All Projects</option>
-            {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-          </select>
-          <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="select-sm">
-            <option value="">All Sales Managers</option>
-            {filteredSalesManagers.map((sm) => (<option key={sm.id} value={sm.id}>{sm.name}</option>))}
-          </select>
+
+        {/* Year + Month multi-select chips */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1">Year</span>
+            {[2026, 2027, 2028, 2029, 2030].map((y) => (
+              <button key={y} onClick={() => toggleYear(y)} className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all duration-100 ${selectedYears.includes(y) ? "bg-[#115e59] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
+                {y}
+              </button>
+            ))}
+          </div>
+          <div className="w-px h-5 bg-[#e8eced]"></div>
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1">Month</span>
+            {MONTHS.map((m, i) => (
+              <button key={i} onClick={() => toggleMonth(i + 1)} className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all duration-100 ${selectedMonths.includes(i + 1) ? "bg-[#0d9488] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
+                {m}
+              </button>
+            ))}
+            {selectedMonths.length > 0 && (
+              <button onClick={() => setSelectedMonths([])} className="px-2 py-1 rounded-[6px] text-[11px] font-medium text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fecaca] transition-all">Clear</button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -172,7 +215,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <KPICard title="Site Visits" value={data.summary.totalSV} icon={<Users className="w-4 h-4" />} color="teal" />
         <KPICard title="Bookings" value={data.summary.totalBookings} icon={<Calendar className="w-4 h-4" />} color="emerald" />
-        <KPICard title="Net Bookings" value={data.summary.totalNetBookings} icon={<Target className="w-4 h-4" />} color="cyan" />
+        <KPICard title="Net Bookings" value={data.summary.totalNetBookings} icon={data.summary.totalNetBookings >= 0 ? <Target className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />} color={data.summary.totalNetBookings >= 0 ? "cyan" : "red"} />
         <KPICard title="Cancellations" value={data.summary.totalCancellations} icon={<XCircle className="w-4 h-4" />} color="red" />
         <KPICard title="Conversion" value={`${data.summary.conversionRate}%`} icon={<TrendingUp className="w-4 h-4" />} color="amber" />
       </div>
@@ -180,77 +223,84 @@ export default function DashboardPage() {
       {/* Zoom Controls */}
       <div className="flex items-center gap-1 bg-white border border-[#e8eced] rounded-[10px] p-1 w-fit shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         {(["15d", "month", "quarter", "year"] as ZoomLevel[]).map((z) => (
-          <button
-            key={z}
-            onClick={() => setZoom(z)}
-            className={`px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-all duration-100 ${
-              zoom === z ? "bg-[#115e59] text-white shadow-sm" : "text-[#64748b] hover:text-[#1a1a2e] hover:bg-[#f8fafb]"
-            }`}
-          >
+          <button key={z} onClick={() => setZoom(z)} className={`px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-all duration-100 ${zoom === z ? "bg-[#115e59] text-white shadow-sm" : "text-[#64748b] hover:text-[#1a1a2e] hover:bg-[#f8fafb]"}`}>
             {ZOOM_LABELS[z]}
           </button>
         ))}
       </div>
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ChartCard title="Site Visits vs Bookings">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 12 }} />
-              <Bar dataKey="sv" name="Site Visits" fill="#0d9488" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="bookings" name="Bookings" fill="#059669" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Net Bookings and Cancellations">
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 12 }} />
-              <Area type="monotone" dataKey="net" name="Net Bookings" stroke="#115e59" fill="#ccfbf1" strokeWidth={2} />
-              <Area type="monotone" dataKey="cancel" name="Cancellations" stroke="#b91c1c" fill="#fef2f2" strokeWidth={1.5} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* Charts Row 2 */}
+      {/* Charts Row 1: Main metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <ChartCard title="Conversion Rate (%)" className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData}>
+        <ChartCard title="Site Visits vs Bookings" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={260}>
+            <ComposedChart data={chartData} barGap={2}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", fontSize: 12 }} />
-              <Bar dataKey="conv" name="Conversion %" fill="#b45309" radius={[3, 3, 0, 0]} />
-            </BarChart>
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", fontSize: 12 }} />
+              <Bar yAxisId="left" dataKey="sv" name="Site Visits" fill="#0d9488" radius={[3, 3, 0, 0]} />
+              <Bar yAxisId="left" dataKey="bookings" name="Bookings" fill="#059669" radius={[3, 3, 0, 0]} />
+              <Line yAxisId="right" type="monotone" dataKey="conv" name="Conversion %" stroke="#b45309" strokeWidth={2} dot={{ r: 3, fill: "#b45309" }} />
+            </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Bookings vs Cancellations">
-          <ResponsiveContainer width="100%" height={240}>
+        {/* Donut + legend */}
+        <ChartCard title="Bookings Breakdown">
+          <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={4} dataKey="value" strokeWidth={0}>
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0}>
                 {pieData.map((_, i) => (<Cell key={i} fill={COLORS[i]} />))}
               </Pie>
               <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="flex justify-center gap-5 mt-2">
+          <div className="flex justify-center gap-4 mt-1">
             {pieData.map((d, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i] }}></div>
-                <span className="text-[11px] text-[#64748b]">{d.name}: {d.value}</span>
+                <div className="w-2 h-2 rounded-full" style={{ background: COLORS[i] }}></div>
+                <span className="text-[11px] text-[#64748b]">{d.name}: <b className="text-[#1a1a2e]">{d.value}</b></span>
               </div>
             ))}
+          </div>
+        </ChartCard>
+      </div>
+
+      {/* Charts Row 2: Net bookings + Top performers */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <ChartCard title="Net Bookings Trend" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={240}>
+            <AreaChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e8eced", fontSize: 12 }} />
+              <Area type="monotone" dataKey="net" name="Net Bookings" stroke="#115e59" fill="#ccfbf1" strokeWidth={2} />
+              <Area type="monotone" dataKey="cancel" name="Cancellations" stroke="#b91c1c" fill="#fef2f2" strokeWidth={1.5} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Top Performers */}
+        <ChartCard title="Top Performers (by Bookings)">
+          <div className="space-y-2.5">
+            {topPerformers.map((p, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-[11px] font-semibold text-[#94a3b8] w-4">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium text-[#1a1a2e] truncate">{p.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex-1 h-1.5 bg-[#f1f3f4] rounded-full overflow-hidden">
+                      <div className="h-full bg-[#0d9488] rounded-full" style={{ width: `${topPerformers[0]?.bookings ? (p.bookings / topPerformers[0].bookings) * 100 : 0}%` }}></div>
+                    </div>
+                    <span className="text-[10px] text-[#64748b] tabular-nums">{p.bookings} bkgs</span>
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-[#b45309] tabular-nums">{p.conv}%</span>
+              </div>
+            ))}
+            {topPerformers.length === 0 && <p className="text-[12px] text-[#94a3b8] text-center py-4">No data</p>}
           </div>
         </ChartCard>
       </div>
@@ -258,7 +308,7 @@ export default function DashboardPage() {
       {/* Paginated Table */}
       <div className="bg-white rounded-[14px] border border-[#e8eced] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#f1f3f4] flex items-center justify-between">
-          <h3 className="text-[14px] font-semibold text-[#1a1a2e]" style={{ fontFamily: "var(--font-display)" }}>Period-wise Breakdown</h3>
+          <h3 className="text-[14px] font-semibold text-[#1a1a2e]" style={{ fontFamily: "var(--font-display)" }}>Detailed Records</h3>
           <span className="text-[11px] text-[#94a3b8]">{tableEntries.length} entries</span>
         </div>
         <div className="overflow-x-auto">
@@ -292,17 +342,12 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-5 py-3 border-t border-[#f1f3f4] flex items-center justify-between">
             <span className="text-[12px] text-[#94a3b8]">Page {page + 1} of {totalPages}</span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="p-1.5 rounded-[6px] text-[#64748b] hover:bg-[#f1f3f4] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page === totalPages - 1} className="p-1.5 rounded-[6px] text-[#64748b] hover:bg-[#f1f3f4] disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="p-1.5 rounded-[6px] text-[#64748b] hover:bg-[#f1f3f4] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page === totalPages - 1} className="p-1.5 rounded-[6px] text-[#64748b] hover:bg-[#f1f3f4] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         )}
@@ -314,9 +359,7 @@ export default function DashboardPage() {
 function LoadingScreen() {
   return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="relative">
-        <Image src="/logo.png" alt="Loading" width={48} height={48} className="rounded-[12px] animate-pulse" />
-      </div>
+      <Image src="/logo.png" alt="Loading" width={48} height={48} className="rounded-[12px] animate-pulse" />
       <p className="text-[13px] text-[#94a3b8]">Loading dashboard...</p>
     </div>
   );
