@@ -90,3 +90,21 @@ textarea:focus-visible {
 td[class*="text-right"] {
   font-variant-numeric: tabular-nums;
 }
+
+
+/* Compact select */
+.select-sm {
+  padding: 6px 12px;
+  border: 1px solid #e8eced;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: all 0.1s ease-out;
+}
+.select-sm:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+  border-color: #0d9488;
+}
