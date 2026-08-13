@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("sales_manager") // admin, sales_manager
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  entries   Entry[]
+}
+
+model Entry {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  periodStart   DateTime
+  periodEnd     DateTime
+  year          Int
+  month         Int
+  half          Int           // 1 = 1st-15th, 2 = 16th-end
+  siteVisits    Int           @default(0)
+  bookings      Int           @default(0)
+  cancellations Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  cancelDetails CancelDetail[]
+
+  @@unique([userId, year, month, half])
+}
+
+model CancelDetail {
+  id              String   @id @default(cuid())
+  entryId         String
+  entry           Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  count           Int
+  bookedYear      Int
+  bookedMonth     Int
+  bookedHalf      Int      // 1 or 2
+  createdAt       DateTime @default(now())
+}
