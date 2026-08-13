@@ -97,7 +97,7 @@ export default function BulkUploadPage() {
         >
           <option value="">Choose a project</option>
           {projects.map((p) => (
-            <option key={p.id} value={p.id}>{p.developer.name} / {p.name}</option>
+            <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
       </div>

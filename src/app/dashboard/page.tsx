@@ -87,7 +87,7 @@ export default function DashboardPage() {
           </select>
           <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
             <option value="">All Projects</option>
-            {projects.map((p) => (<option key={p.id} value={p.id}>{p.developer.name} / {p.name}</option>))}
+            {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
           </select>
           <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
             <option value="">All Sales Managers</option>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                 <tr key={e.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 text-gray-900">{getPeriodLabel(e.year, e.month, e.half)}</td>
                   <td className="px-5 py-3 text-gray-600">{e.salesManager.name}</td>
-                  <td className="px-5 py-3 text-gray-600">{e.project.developer.name} / {e.project.name}</td>
+                  <td className="px-5 py-3 text-gray-600">{e.project.name}</td>
                   <td className="text-right px-5 py-3 font-medium">{e.siteVisits}</td>
                   <td className="text-right px-5 py-3 text-emerald-600 font-medium">{e.bookings}</td>
                   <td className="text-right px-5 py-3 font-medium"><span className={e.netBookings >= 0 ? "text-teal-600" : "text-red-600"}>{e.netBookings}</span></td>

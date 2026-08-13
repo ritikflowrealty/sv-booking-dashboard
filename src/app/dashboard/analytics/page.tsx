@@ -105,7 +105,7 @@ export default function AnalyticsPage() {
             <>
               <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
                 <option value="">All Projects</option>
-                {projects.map((p) => (<option key={p.id} value={p.id}>{p.developer.name} / {p.name}</option>))}
+                {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
               </select>
               <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
                 <option value="">All Team Leads</option>

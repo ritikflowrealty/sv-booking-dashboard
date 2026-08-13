@@ -16,6 +16,7 @@ import {
   FileText,
   UserCheck,
   Upload,
+  DatabaseBackup,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -82,6 +83,12 @@ export function Sidebar({ user }: SidebarProps) {
       href: "/dashboard/users",
       label: "Team Leads",
       icon: Users,
+      roles: ["admin"],
+    },
+    {
+      href: "/dashboard/backup",
+      label: "Backup",
+      icon: DatabaseBackup,
       roles: ["admin"],
     },
   ];

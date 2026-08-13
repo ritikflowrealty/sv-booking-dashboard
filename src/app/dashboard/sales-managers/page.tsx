@@ -112,7 +112,7 @@ export default function SalesManagersPage() {
                 {projects.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1.5 rounded">
                     <input type="checkbox" checked={selectedProjectIds.includes(p.id)} onChange={() => toggleProject(p.id)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                    <span className="text-gray-700">{p.developer.name} / {p.name}</span>
+                    <span className="text-gray-700">{p.name}</span>
                   </label>
                 ))}
               </div>
@@ -142,7 +142,7 @@ export default function SalesManagersPage() {
                   <td className="px-5 py-3 text-gray-900 font-medium">{sm.name}</td>
                   <td className="px-5 py-3 text-gray-600 text-xs">
                     {sm.salesManagerProjects.length > 0
-                      ? sm.salesManagerProjects.map((sp) => `${sp.project.developer.name} / ${sp.project.name}`).join(", ")
+                      ? sm.salesManagerProjects.map((sp) => sp.project.name).join(", ")
                       : <span className="text-gray-400">No projects assigned</span>}
                   </td>
                   <td className="text-center px-5 py-3 text-gray-600">{sm._count.entries}</td>

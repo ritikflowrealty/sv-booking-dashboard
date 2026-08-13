@@ -78,7 +78,7 @@ export default function RecordsPage() {
                 <tr key={entry.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 text-gray-900">{getPeriodLabel(entry.year, entry.month, entry.half)}</td>
                   <td className="px-5 py-3 text-gray-600">{entry.salesManager.name}</td>
-                  <td className="px-5 py-3 text-gray-600">{entry.project.developer.name} / {entry.project.name}</td>
+                  <td className="px-5 py-3 text-gray-600">{entry.project.name}</td>
                   <td className="text-right px-5 py-3 text-gray-900 font-medium">{entry.siteVisits}</td>
                   <td className="text-right px-5 py-3 text-emerald-600 font-medium">{entry.bookings}</td>
                   <td className="text-right px-5 py-3 text-red-600 font-medium">{entry.cancellations}</td>

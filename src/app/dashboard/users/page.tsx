@@ -106,7 +106,7 @@ export default function UsersPage() {
                 {projects.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1.5 rounded">
                     <input type="checkbox" checked={formData.projectIds.includes(p.id)} onChange={() => toggleProject(p.id)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                    <span className="text-gray-700">{p.developer.name} / {p.name}</span>
+                    <span className="text-gray-700">{p.name}</span>
                   </label>
                 ))}
               </div>
@@ -137,7 +137,7 @@ export default function UsersPage() {
                   <td className="px-5 py-3 text-gray-900 font-medium">{user.name}</td>
                   <td className="px-5 py-3 text-gray-600">{user.email}</td>
                   <td className="px-5 py-3"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === "admin" ? "bg-purple-50 text-purple-700" : "bg-teal-50 text-teal-700"}`}>{user.role === "admin" ? "Admin" : "Team Lead"}</span></td>
-                  <td className="px-5 py-3 text-gray-600 text-xs">{user.userProjects.length > 0 ? user.userProjects.map((up) => `${up.project.developer.name} / ${up.project.name}`).join(", ") : "-"}</td>
+                  <td className="px-5 py-3 text-gray-600 text-xs">{user.userProjects.length > 0 ? user.userProjects.map((up) => up.project.name).join(", ") : "-"}</td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => handleEdit(user)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-teal-600 transition"><Pencil className="w-4 h-4" /></button>

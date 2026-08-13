@@ -124,7 +124,7 @@ export default function EntryPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Project</label>
               <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" required>
                 <option value="">Select Project</option>
-                {projects.map((p) => (<option key={p.id} value={p.id}>{p.developer.name} / {p.name}</option>))}
+                {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
               </select>
             </div>
             <div>
