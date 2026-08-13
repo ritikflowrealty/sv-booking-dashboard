@@ -84,17 +84,16 @@ export default function DashboardPage() {
     if (!data) return [];
     const entries = data.entries;
 
-    if (zoom === "15d") {
-      return entries.map((e) => ({
-        label: getPeriodLabel(e.year, e.month, e.half),
-        sv: e.siteVisits, bookings: e.bookings, net: e.netBookings, cancel: e.cancellations,
-        conv: e.siteVisits > 0 ? parseFloat(((e.bookings / e.siteVisits) * 100).toFixed(1)) : 0,
-      }));
-    }
-
     const map = new Map<string, { sv: number; bookings: number; net: number; cancel: number }>();
 
-    if (zoom === "month") {
+    if (zoom === "15d") {
+      entries.forEach((e) => {
+        const key = getPeriodLabel(e.year, e.month, e.half);
+        const cur = map.get(key) || { sv: 0, bookings: 0, net: 0, cancel: 0 };
+        cur.sv += e.siteVisits; cur.bookings += e.bookings; cur.net += e.netBookings; cur.cancel += e.cancellations;
+        map.set(key, cur);
+      });
+    } else if (zoom === "month") {
       entries.forEach((e) => {
         const key = `${MONTHS[e.month - 1]} ${e.year}`;
         const cur = map.get(key) || { sv: 0, bookings: 0, net: 0, cancel: 0 };

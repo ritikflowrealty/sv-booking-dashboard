@@ -59,14 +59,15 @@ export async function GET(req: NextRequest) {
 
   const periodData = entries.map((entry) => {
     // Net bookings = bookings - cancellations that were originally booked in THIS period
-    // Must also match projectId and salesManagerId for accuracy
+    // Match by year, month, half, project AND salesManager for accurate per-SM net
     const cancellationsFromThisPeriod = cancelDetailsAffecting
       .filter(
         (cd) =>
           cd.bookedYear === entry.year &&
           cd.bookedMonth === entry.month &&
           cd.bookedHalf === entry.half &&
-          cd.entry.projectId === entry.projectId
+          cd.entry.projectId === entry.projectId &&
+          cd.entry.salesManagerId === entry.salesManagerId
       )
       .reduce((sum, cd) => sum + cd.count, 0);
 
