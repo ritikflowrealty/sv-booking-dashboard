@@ -36,15 +36,25 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const [data, setData] = useState<DashboardData | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([new Date().getFullYear()]);
-  const [selectedYears, setSelectedYears] = useState<number[]>([new Date().getFullYear()]);
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([]);
-  const [selectedProject, setSelectedProject] = useState("");
-  const [selectedSM, setSelectedSM] = useState("");
+
+  // Draft filters (user is editing these)
+  const [draftYears, setDraftYears] = useState<number[]>([new Date().getFullYear()]);
+  const [draftMonths, setDraftMonths] = useState<number[]>([]);
+  const [draftProject, setDraftProject] = useState("");
+  const [draftSM, setDraftSM] = useState("");
+
+  // Applied filters (what's actually fetched)
+  const [appliedYears, setAppliedYears] = useState<number[]>([new Date().getFullYear()]);
+  const [appliedMonths, setAppliedMonths] = useState<number[]>([]);
+  const [appliedProject, setAppliedProject] = useState("");
+  const [appliedSM, setAppliedSM] = useState("");
+
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [allSalesManagers, setAllSalesManagers] = useState<SMOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState<ZoomLevel>("quarter");
   const [page, setPage] = useState(0);
+  const [filtersDirty, setFiltersDirty] = useState(false);
 
   useEffect(() => {
     fetch("/api/my-projects").then((r) => r.json()).then(setProjects);
@@ -52,38 +62,59 @@ export default function DashboardPage() {
     fetch("/api/available-years").then((r) => r.json()).then((years: number[]) => {
       setAvailableYears(years);
       if (years.length > 0 && !years.includes(new Date().getFullYear())) {
-        setSelectedYears([years[years.length - 1]]);
+        setDraftYears([years[years.length - 1]]);
+        setAppliedYears([years[years.length - 1]]);
       }
     });
   }, [session]);
 
   const filteredSalesManagers = useMemo(() => {
-    if (!selectedProject) return allSalesManagers;
+    if (!draftProject) return allSalesManagers;
     return allSalesManagers.filter((sm) =>
-      sm.salesManagerProjects?.some((sp) => sp.project.id === selectedProject)
+      sm.salesManagerProjects?.some((sp) => sp.project.id === draftProject)
     );
-  }, [selectedProject, allSalesManagers]);
+  }, [draftProject, allSalesManagers]);
 
-  useEffect(() => { setSelectedSM(""); }, [selectedProject]);
+  useEffect(() => { setDraftSM(""); setFiltersDirty(true); }, [draftProject]);
 
-  const fetchData = useCallback(() => {
+  // Check if draft differs from applied
+  useEffect(() => {
+    const dirty =
+      JSON.stringify(draftYears) !== JSON.stringify(appliedYears) ||
+      JSON.stringify(draftMonths) !== JSON.stringify(appliedMonths) ||
+      draftProject !== appliedProject ||
+      draftSM !== appliedSM;
+    setFiltersDirty(dirty);
+  }, [draftYears, draftMonths, draftProject, draftSM, appliedYears, appliedMonths, appliedProject, appliedSM]);
+
+  const applyFilters = useCallback(() => {
+    setAppliedYears([...draftYears]);
+    setAppliedMonths([...draftMonths]);
+    setAppliedProject(draftProject);
+    setAppliedSM(draftSM);
+    setFiltersDirty(false);
+  }, [draftYears, draftMonths, draftProject, draftSM]);
+
+  // Fetch when applied filters change
+  useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("years", selectedYears.join(","));
-    if (selectedMonths.length > 0) params.set("months", selectedMonths.join(","));
-    if (selectedProject) params.set("projectId", selectedProject);
-    if (selectedSM) params.set("salesManagerId", selectedSM);
+    params.set("years", appliedYears.join(","));
+    if (appliedMonths.length > 0) params.set("months", appliedMonths.join(","));
+    if (appliedProject) params.set("projectId", appliedProject);
+    if (appliedSM) params.set("salesManagerId", appliedSM);
     fetch(`/api/dashboard?${params}`).then((r) => r.json()).then((d) => { setData(d); setLoading(false); setPage(0); });
-  }, [selectedYears, selectedMonths, selectedProject, selectedSM]);
+  }, [appliedYears, appliedMonths, appliedProject, appliedSM]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Initial load
+  useEffect(() => { applyFilters(); }, []);
 
   const toggleYear = (y: number) => {
-    setSelectedYears((prev) => prev.includes(y) ? (prev.length > 1 ? prev.filter((v) => v !== y) : prev) : [...prev, y].sort());
+    setDraftYears((prev) => prev.includes(y) ? (prev.length > 1 ? prev.filter((v) => v !== y) : prev) : [...prev, y].sort());
   };
 
   const toggleMonth = (m: number) => {
-    setSelectedMonths((prev) => prev.includes(m) ? prev.filter((v) => v !== m) : [...prev, m].sort((a, b) => a - b));
+    setDraftMonths((prev) => prev.includes(m) ? prev.filter((v) => v !== m) : [...prev, m].sort((a, b) => a - b));
   };
 
   // Aggregate data based on zoom
@@ -181,11 +212,11 @@ export default function DashboardPage() {
             <p className="text-[13px] text-[#64748b] mt-0.5">Performance overview for decision-making</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="select-sm">
+            <select value={draftProject} onChange={(e) => setDraftProject(e.target.value)} className="select-sm">
               <option value="">All Projects</option>
               {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
             </select>
-            <select value={selectedSM} onChange={(e) => setSelectedSM(e.target.value)} className="select-sm">
+            <select value={draftSM} onChange={(e) => setDraftSM(e.target.value)} className="select-sm">
               <option value="">All Sales Managers</option>
               {filteredSalesManagers.map((sm) => (<option key={sm.id} value={sm.id}>{sm.name}</option>))}
             </select>
@@ -197,7 +228,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1 flex-wrap">
             <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1">Year</span>
             {availableYears.map((y) => (
-              <button key={y} onClick={() => toggleYear(y)} className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all duration-100 ${selectedYears.includes(y) ? "bg-[#115e59] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
+              <button key={y} onClick={() => toggleYear(y)} className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium transition-all duration-100 ${draftYears.includes(y) ? "bg-[#115e59] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
                 {y}
               </button>
             ))}
@@ -206,14 +237,26 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide">
             <span className="text-[11px] font-medium text-[#94a3b8] uppercase tracking-wider mr-1 shrink-0">Month</span>
             {MONTHS.map((m, i) => (
-              <button key={i} onClick={() => toggleMonth(i + 1)} className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all duration-100 shrink-0 ${selectedMonths.includes(i + 1) ? "bg-[#0d9488] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
+              <button key={i} onClick={() => toggleMonth(i + 1)} className={`px-2 py-1 rounded-[6px] text-[11px] font-medium transition-all duration-100 shrink-0 ${draftMonths.includes(i + 1) ? "bg-[#0d9488] text-white" : "bg-[#f1f3f4] text-[#64748b] hover:bg-[#e8eced]"}`}>
                 {m}
               </button>
             ))}
-            {selectedMonths.length > 0 && (
-              <button onClick={() => setSelectedMonths([])} className="px-2 py-1 rounded-[6px] text-[11px] font-medium text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fecaca] transition-all shrink-0">Clear</button>
+            {draftMonths.length > 0 && (
+              <button onClick={() => setDraftMonths([])} className="px-2 py-1 rounded-[6px] text-[11px] font-medium text-[#b91c1c] bg-[#fef2f2] hover:bg-[#fecaca] transition-all shrink-0">Clear</button>
             )}
           </div>
+          {/* Apply button */}
+          <button
+            onClick={applyFilters}
+            disabled={!filtersDirty}
+            className={`ml-auto px-4 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all duration-150 shrink-0 ${
+              filtersDirty
+                ? "bg-[#115e59] text-white hover:bg-[#0c4a46] shadow-sm active:scale-[0.97]"
+                : "bg-[#f1f3f4] text-[#b0b8c1] cursor-not-allowed"
+            }`}
+          >
+            Apply
+          </button>
         </div>
       </div>
 
