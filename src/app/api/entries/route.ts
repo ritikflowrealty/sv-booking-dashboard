@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { year, month, half, siteVisits, bookings, cancellations, cancelDetails, salesManagerId, projectId } =
+  const { year, month, half, siteVisits, bookings, cancellations, cancelDetails, salesManagerId, projectId, deputyTLId } =
     await req.json();
 
   if (!salesManagerId || !projectId) {
@@ -72,10 +72,11 @@ export async function POST(req: NextRequest) {
           half,
         },
       },
-      update: { siteVisits, bookings, cancellations },
+      update: { siteVisits, bookings, cancellations, deputyTLId: deputyTLId || null },
       create: {
         salesManagerId,
         projectId,
+        deputyTLId: deputyTLId || null,
         year,
         month,
         half,

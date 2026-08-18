@@ -16,6 +16,7 @@ model User {
   updatedAt     DateTime        @updatedAt
   userProjects  UserProject[]
   salesManagers SalesManager[]
+  deputyTLs     DeputyTL[]
 }
 
 model UserProject {
@@ -66,6 +67,18 @@ model SalesManager {
   @@unique([name, teamLeadId])
 }
 
+model DeputyTL {
+  id         String   @id @default(cuid())
+  name       String
+  teamLeadId String
+  teamLead   User     @relation(fields: [teamLeadId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  entries    Entry[]
+
+  @@unique([name, teamLeadId])
+}
+
 model SalesManagerProject {
   id             String       @id @default(cuid())
   salesManagerId String
@@ -83,6 +96,8 @@ model Entry {
   salesManager   SalesManager  @relation(fields: [salesManagerId], references: [id], onDelete: Cascade)
   projectId      String
   project        Project       @relation(fields: [projectId], references: [id])
+  deputyTLId     String?
+  deputyTL       DeputyTL?     @relation(fields: [deputyTLId], references: [id])
   periodStart    DateTime
   periodEnd      DateTime
   year           Int

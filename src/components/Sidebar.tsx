@@ -56,6 +56,7 @@ export function Sidebar({ user }: SidebarProps) {
       label: "Team",
       links: [
         { href: "/dashboard/sales-managers", label: "Sales Managers", icon: UserCheck, roles: ["admin", "team_lead"] },
+        { href: "/dashboard/deputy-tls", label: "Deputy TLs", icon: Users, roles: ["admin", "team_lead"] },
         { href: "/dashboard/users", label: "Team Leads", icon: Users, roles: ["admin"] },
       ],
     },
